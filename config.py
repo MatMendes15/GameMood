@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
@@ -16,3 +17,8 @@ CHUNK_OVERLAP = 200
 
 TABLE_GAMES = "games_lore"
 TABLE_SCIENCE = "saude_mental"
+
+
+load_dotenv()
+IGDB_CLIENT_ID = os.getenv("IGDB_CLIENT_ID")
+IGDB_CLIENT_SECRET = os.getenv("IGDB_CLIENT_SECRET")

@@ -23,19 +23,22 @@ def formatar_documentos(docs):
     textos = []
     for d in docs:
         meta = d.metadata
+        # Se for um jogo
         if "titulo" in meta:
-            textos.append(f"- JOGO: {meta.get('titulo')} | Gênero: {meta.get('genero')} | Pacing: {meta.get('pacing')} | Duração: {meta.get('duracao_sessao')}\n  Descrição: {d.page_content}")
+            textos.append(f"- JOGO: {meta.get('titulo')} | Gêneros: {meta.get('generos')} | Temas: {meta.get('temas')} | Avaliação: {meta.get('rating')}\n  {d.page_content}")
+        # Se for um artigo científico
         elif "titulo_paper" in meta:
-            textos.append(f"- ESTUDO: {meta.get('titulo_paper')} | Autores: {meta.get('autores')} ({meta.get('ano')}) | Foco: {meta.get('transtorno')}\n  Conclusão: {d.page_content}")
+            textos.append(f"- ESTUDO: {meta.get('titulo_paper')} | Autores: {meta.get('autores')} ({meta.get('ano')}) | Foco: {meta.get('transtorno')}\n  {d.page_content}")
     return "\n\n".join(textos)
 
 def gerar_recomendacao(humor, energia, tempo_disponivel, generos):
-    print("1. Conectando ao banco de dados e modelos...")
+    print("1. Conectando ao banco de dados e LLM...")
     retriever_games, retriever_science = configurar_retrievers()
     
-    llm = ChatOllama(model=LLM_MODEL, temperature=0.2)
+    llm = ChatOllama(model=LLM_MODEL, temperature=0.1)
     
-    query_usuario = f"ansioso energia baixa {generos} {tempo_disponivel}"
+    # string de busca combinando o estado do usuário
+    query_usuario = f"Estado: {humor}. Energia {energia}. Busca jogos de {generos}."
     
     print("2. Buscando contexto no LanceDB...")
     docs_games = retriever_games.invoke(query_usuario)
@@ -49,11 +52,12 @@ def gerar_recomendacao(humor, energia, tempo_disponivel, generos):
     mensagens = [
         ("system", """Você é o GameMood, um consultor de bem-estar.
 Sua missão é recomendar jogos baseando-se EXCLUSIVAMENTE nos contextos fornecidos abaixo.
-Regras:
-1. Nunca invente jogos ou estudos científicos.
-2. Cite o estudo científico relevante.
-3. Inclua um aviso médico no final.
-4. NUNCA faça perguntas de volta ao usuário ou espere respostas. Gere apenas o texto da recomendação.
+Regras OBRIGATÓRIAS:
+1. Nunca invente jogos ou estudos científicos. Use APENAS o que está no contexto.
+2. Cite o estudo científico relevante (Autor, Ano) para justificar a escolha do jogo.
+3. Se o contexto de jogos não tiver nada exato, recomende o mais próximo disponível no contexto.
+4. Inclua um aviso médico claro no final de que isso não substitui terapia.
+5. Responda de forma empática e direta em português do Brasil.
 
 CONTEXTO CIENTÍFICO:
 {contexto_science}
@@ -64,16 +68,16 @@ CONTEXTO DE GAMES:
 - Humor: {humor}
 - Energia: {energia}
 - Tempo: {tempo_disponivel}
-- Gêneros: {generos}
+- Gêneros favoritos: {generos}
 
-Recomende 1 jogo que combine com meu estado e explique o motivo com base na ciência fornecida. Responda em português.""")
+Com base na ciência fornecida, qual desses jogos você me recomenda e por quê?""")
     ]
     
     prompt_template = ChatPromptTemplate.from_messages(mensagens)
     chain = prompt_template | llm
     
     print("4. Gerando resposta com o LLM...\n")
-    print("=== RESPOSTA DO LLM ===\n")
+    print("=== RESPOSTA DO GAMEMOOD ===\n")
     
     texto_completo = ""
     
@@ -88,14 +92,14 @@ Recomende 1 jogo que combine com meu estado e explique o motivo com base na ciê
         print(chunk.content, end="", flush=True)
         texto_completo += chunk.content
         
-    print("\n\n=======================\n")
+    print("\n\n===========================\n")
     return texto_completo
 
 if __name__ == "__main__":
-    print("TESTE DO RAG GAMEMOOD")
+    print("TESTE DO RAG COM DADOS REAIS")
     resultado = gerar_recomendacao(
-        humor="muito ansioso e estressado do trabalho",
+        humor="me sentindo um pouco deprimido e sem foco",
         energia="baixa",
-        tempo_disponivel="30min a 1h",
-        generos="RPG, Simulação"
+        tempo_disponivel="algumas horas",
+        generos="jogos de mundo aberto ou aventura"
     )
