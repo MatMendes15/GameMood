@@ -1,0 +1,19 @@
+# Ambientes Virtuais
+venv/
+env/
+.env
+
+# Arquivos de Cache e Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Dados locais e Banco Vetorial LanceDB
+data/raw/
+data/lancedb/
+
+# Ignorar o SQLite
+*.sqlite
+*.db
+
+.vscode/
